@@ -5,7 +5,7 @@ Automatically post tech/IT articles to [dev.to](https://dev.to) every week using
 ## How it works
 
 1. **Generate**: Trigger the "Generate Draft Article" workflow — AI (Gemini) writes a draft and saves it to `posts/drafts/`
-2. **Review**: Pull the repo, edit the draft as needed, then move it to `posts/ready/`
+2. **Review**: View and edit the draft directly on GitHub (click the file, then the pencil icon)
 3. **Auto-post**: Every Monday at 9:00 AM (Vietnam time), the workflow picks the oldest article from `posts/ready/`, posts it as a **draft** on dev.to, and moves it to `posts/published/`
 4. **Publish**: Go to your dev.to dashboard, review the draft, and click Publish
 
@@ -37,13 +37,13 @@ Go to your repo → **Settings** → **Secrets and variables** → **Actions** �
 
 ### Review and approve
 
-```bash
-git pull
-# Edit the draft in posts/drafts/ as needed
-git mv posts/drafts/2026-08-30-your-article.md posts/ready/
-git commit -m "approve: your-article"
-git push
-```
+All done on GitHub — no need to pull code locally:
+
+1. Navigate to `posts/drafts/` in your repo and click the draft file to read it
+2. Click the **pencil icon** to edit directly on GitHub if needed, then commit
+3. Go to the **Actions** tab → select **"Approve Draft"** → click **"Run workflow"**
+4. Enter the filename (e.g., `2026-08-30-getting-started-with-docker.md`) and run
+5. The file is moved to `posts/ready/` automatically
 
 ### Auto-posting
 

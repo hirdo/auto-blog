@@ -1,0 +1,36 @@
+name: Approve Draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'Filename in posts/drafts/ to approve (e.g. "2026-08-30-getting-started-with-docker.md")'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Move draft to ready
+        run: |
+          FILE="posts/drafts/${{ github.event.inputs.filename }}"
+          if [ ! -f "$FILE" ]; then
+            echo "Error: File '$FILE' not found."
+            echo "Available drafts:"
+            ls posts/drafts/ 2>/dev/null || echo "  (none)"
+            exit 1
+          fi
+          git mv "$FILE" "posts/ready/${{ github.event.inputs.filename }}"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "approve: move ${{ github.event.inputs.filename }} to ready"
+          git push
