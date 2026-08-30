@@ -1,0 +1,14 @@
+{
+  "name": "auto-blog",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Auto-post tech articles to dev.to using GitHub Actions",
+  "scripts": {
+    "generate": "node scripts/generate-draft.mjs",
+    "post": "node scripts/post-to-devto.mjs"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  }
+}
