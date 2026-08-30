@@ -30,6 +30,47 @@ function uniqueFilename(dir, base) {
   return name;
 }
 
+function sanitizeJsonString(text) {
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const code = ch.charCodeAt(0);
+
+    if (escaped) {
+      result += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (inString && ch === '\\') {
+      result += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (inString && code < 0x20) {
+      if (ch === '\n') result += '\\n';
+      else if (ch === '\r') result += '\\r';
+      else if (ch === '\t') result += '\\t';
+      else result += `\\u${code.toString(16).padStart(4, '0')}`;
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
 async function callGemini(apiKey, topic, tags) {
   const tagInstruction = tags
     ? `Focus on these technology areas: ${tags}.`
@@ -73,14 +114,7 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
     throw new Error(`Gemini returned no content: ${JSON.stringify(data)}`);
   }
 
-  const cleaned = text.replace(/[\x00-\x1f\x7f]/g, (ch) => {
-    if (ch === '\n') return '\\n';
-    if (ch === '\r') return '\\r';
-    if (ch === '\t') return '\\t';
-    return '';
-  });
-
-  return JSON.parse(cleaned);
+  return JSON.parse(sanitizeJsonString(text));
 }
 
 async function main() {
