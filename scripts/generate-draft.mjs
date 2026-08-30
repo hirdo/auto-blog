@@ -73,7 +73,14 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
     throw new Error(`Gemini returned no content: ${JSON.stringify(data)}`);
   }
 
-  return JSON.parse(text);
+  const cleaned = text.replace(/[\x00-\x1f\x7f]/g, (ch) => {
+    if (ch === '\n') return '\\n';
+    if (ch === '\r') return '\\r';
+    if (ch === '\t') return '\\t';
+    return '';
+  });
+
+  return JSON.parse(cleaned);
 }
 
 async function main() {
