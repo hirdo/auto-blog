@@ -1,0 +1,40 @@
+name: Weekly Post to dev.to
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # 02:00 UTC Monday = 09:00 Vietnam (UTC+7)
+  workflow_dispatch: {}   # Allow manual trigger for testing
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: weekly-post
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Post article to dev.to
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+        run: node scripts/post-to-devto.mjs
+
+      - name: Commit published article
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posts/ready/ posts/published/
+          git diff --staged --quiet && echo "No file changes to commit" && exit 0
+          git commit -m "publish: move posted article to published/"
+          git pull --rebase origin main
+          git push
