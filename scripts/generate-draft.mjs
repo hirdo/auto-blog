@@ -49,7 +49,7 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
 - "body": full article body in markdown (do NOT include the title in the body)
 - "suggested_tags": array of 2-4 dev.to tags (lowercase, no spaces, alphanumeric and hyphens only)`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
     method: 'POST',
