@@ -4,7 +4,7 @@ import path from 'node:path';
 const DRAFTS_DIR = path.resolve('posts/drafts');
 const IMAGES_DIR = path.resolve('posts/images');
 
-const IMAGE_MODEL = 'gemini-2.0-flash-exp';
+const IMAGE_MODEL = 'gemini-3.1-flash-image';
 
 function parseArgs(argv) {
   const args = { topic: '', tags: '' };
