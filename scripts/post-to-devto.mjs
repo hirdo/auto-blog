@@ -49,12 +49,12 @@ async function postArticle(apiKey, filename) {
     throw new Error(`dev.to API error ${res.status}: ${errBody}`);
   }
 
-  const article = await res.json();
+  const posted = await res.json();
 
   if (!fs.existsSync(PUBLISHED_DIR)) fs.mkdirSync(PUBLISHED_DIR, { recursive: true });
   fs.renameSync(filepath, path.join(PUBLISHED_DIR, filename));
 
-  return article.url;
+  return posted.url;
 }
 
 async function main() {

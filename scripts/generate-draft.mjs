@@ -165,7 +165,16 @@ async function main() {
 
   console.log(`Generating article about: ${topic}`);
 
-  const result = await callGemini(apiKey, topic, tags);
+  let result;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      result = await callGemini(apiKey, topic, tags);
+      break;
+    } catch (err) {
+      if (attempt === 2) throw err;
+      console.warn(`Attempt ${attempt} failed (${err.message}), retrying...`);
+    }
+  }
 
   if (!result.title || !result.body) {
     throw new Error(`Invalid response from Gemini: missing title or body`);
