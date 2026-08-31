@@ -40,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add posts/drafts/
+          git add posts/drafts/ posts/images/
           git diff --staged --quiet && echo "No new files to commit" && exit 0
           git commit -m "draft: generate article on '${{ github.event.inputs.topic }}'"
           git push

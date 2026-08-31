@@ -27,6 +27,7 @@ jobs:
       - name: Post articles to dev.to
         env:
           DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/post-to-devto.mjs
 
       - name: Commit published articles
