@@ -42,8 +42,10 @@ All done on GitHub — no need to pull code locally:
 1. Navigate to `posts/drafts/` in your repo and click the draft file to read it
 2. Click the **pencil icon** to edit directly on GitHub if needed, then commit
 3. Go to the **Actions** tab → select **"Approve Draft"** → click **"Run workflow"**
-4. Enter the filename (e.g., `2026-08-30-getting-started-with-docker.md`) and run
-5. The file is moved to `posts/ready/` automatically
+4. Either:
+   - Check **"Approve ALL drafts"** to move everything at once, or
+   - Enter filenames separated by commas (e.g., `file1.md, file2.md`)
+5. The files are moved to `posts/ready/` automatically
 
 ### Auto-posting
 

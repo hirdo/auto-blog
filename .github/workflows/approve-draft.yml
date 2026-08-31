@@ -3,9 +3,14 @@ name: Approve Draft
 on:
   workflow_dispatch:
     inputs:
-      filename:
-        description: 'Filename in posts/drafts/ to approve (e.g. "2026-08-30-getting-started-with-docker.md")'
-        required: true
+      approve_all:
+        description: 'Approve ALL drafts at once'
+        required: false
+        type: boolean
+        default: false
+      filenames:
+        description: 'Filenames to approve (comma-separated, e.g. "file1.md, file2.md"). Ignored if "Approve ALL" is checked.'
+        required: false
         type: string
 
 permissions:
@@ -17,20 +22,59 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Move draft to ready
+      - name: Move drafts to ready
         run: |
-          FILE="posts/drafts/${{ github.event.inputs.filename }}"
-          if [ ! -f "$FILE" ]; then
-            echo "Error: File '$FILE' not found."
-            echo "Available drafts:"
-            ls posts/drafts/ 2>/dev/null || echo "  (none)"
+          echo "Available drafts:"
+          ls posts/drafts/*.md 2>/dev/null | sed 's|posts/drafts/||' || echo "  (none)"
+          echo ""
+
+          MOVED=0
+
+          if [ "${{ github.event.inputs.approve_all }}" = "true" ]; then
+            echo "Approving ALL drafts..."
+            for f in posts/drafts/*.md; do
+              [ -f "$f" ] || continue
+              NAME=$(basename "$f")
+              git mv "$f" "posts/ready/$NAME"
+              echo "  ✓ $NAME"
+              MOVED=$((MOVED + 1))
+            done
+          else
+            INPUT="${{ github.event.inputs.filenames }}"
+            if [ -z "$INPUT" ]; then
+              echo "Error: No filenames provided and 'Approve ALL' is not checked."
+              echo "Either check 'Approve ALL' or enter filenames separated by commas."
+              exit 1
+            fi
+
+            IFS=',' read -ra FILES <<< "$INPUT"
+            for raw in "${FILES[@]}"; do
+              NAME=$(echo "$raw" | xargs)
+              [ -z "$NAME" ] && continue
+              FILE="posts/drafts/$NAME"
+              if [ ! -f "$FILE" ]; then
+                echo "  ✗ $NAME — not found, skipping"
+                continue
+              fi
+              git mv "$FILE" "posts/ready/$NAME"
+              echo "  ✓ $NAME"
+              MOVED=$((MOVED + 1))
+            done
+          fi
+
+          if [ "$MOVED" -eq 0 ]; then
+            echo ""
+            echo "Error: No files were moved. Check filenames or drafts folder."
             exit 1
           fi
-          git mv "$FILE" "posts/ready/${{ github.event.inputs.filename }}"
+
+          echo ""
+          echo "Approved $MOVED file(s)."
 
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "approve: move ${{ github.event.inputs.filename }} to ready"
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "approve: move ${{ github.event.inputs.approve_all == 'true' && 'all drafts' || github.event.inputs.filenames }} to ready"
           git push
