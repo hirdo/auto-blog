@@ -23,21 +23,25 @@ async function postArticle(apiKey, filename) {
     ? frontmatter.tags.map(t => String(t).toLowerCase().replace(/\s+/g, '-')).slice(0, 4)
     : [];
 
+  const article = {
+    title: frontmatter.title,
+    body_markdown: body.trim(),
+    tags,
+    description: frontmatter.description || '',
+    published: false,
+  };
+
+  if (frontmatter.cover_image && process.env.GITHUB_REPOSITORY) {
+    article.cover_image = `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/main/posts/images/${frontmatter.cover_image}`;
+  }
+
   const res = await fetch('https://dev.to/api/articles', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'api-key': apiKey,
     },
-    body: JSON.stringify({
-      article: {
-        title: frontmatter.title,
-        body_markdown: body.trim(),
-        tags,
-        description: frontmatter.description || '',
-        published: false,
-      },
-    }),
+    body: JSON.stringify({ article }),
   });
 
   if (!res.ok) {
