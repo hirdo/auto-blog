@@ -37,6 +37,7 @@ async function postArticle(apiKey, filename) {
       : process.env.GITHUB_REPOSITORY
         ? `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/main/posts/images/${frontmatter.cover_image}`
         : undefined;
+    if (article.cover_image) console.log(`  Cover image: ${article.cover_image}`);
   }
 
   const res = await fetch('https://dev.to/api/articles', {
