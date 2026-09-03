@@ -2,9 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const DRAFTS_DIR = path.resolve('posts/drafts');
-const IMAGES_DIR = path.resolve('posts/images');
 
-const IMAGE_MODEL = 'gemini-3.1-flash-image';
 const TEXT_MODELS = [
   process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   'gemini-2.5-flash',
@@ -128,34 +126,23 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
   return JSON.parse(sanitizeJsonString(text));
 }
 
-async function generateCoverImage(apiKey, topic) {
-  const prompt = `Generate a professional, visually appealing blog cover image about: ${topic}. The image should be a clean, modern illustration suitable for a tech blog. Do not include any text or words in the image.`;
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent?key=${apiKey}`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseModalities: ['IMAGE'],
-      },
-    }),
-  });
+async function searchCoverImage(pexelsKey, topic) {
+  const res = await fetch(
+    `https://api.pexels.com/v1/search?query=${encodeURIComponent(topic)}&per_page=1&orientation=landscape`,
+    { headers: { Authorization: pexelsKey } },
+  );
 
   if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`Gemini image API error ${res.status}: ${errBody}`);
+    throw new Error(`Pexels API error ${res.status}: ${await res.text()}`);
   }
 
   const data = await res.json();
-  const part = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-  if (!part?.inlineData?.data) {
-    throw new Error('Gemini returned no image data');
+  const url = data.photos?.[0]?.src?.large2x;
+  if (!url) {
+    throw new Error('No matching images found on Pexels');
   }
 
-  return Buffer.from(part.inlineData.data, 'base64');
+  return url;
 }
 
 async function main() {
@@ -213,18 +200,17 @@ async function main() {
   const basename = `${today}-${slug}`;
   const filename = uniqueFilename(DRAFTS_DIR, basename);
 
-  let coverImageFile = '';
-  console.log('Generating cover image...');
-  try {
-    const imageBuffer = await generateCoverImage(apiKey, topic);
-    const imageFilename = `${basename}.png`;
-    if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
-    fs.writeFileSync(path.join(IMAGES_DIR, imageFilename), imageBuffer);
-    coverImageFile = imageFilename;
-    console.log(`Cover image saved: posts/images/${imageFilename}`);
-  } catch (err) {
-    console.warn(`Warning: Could not generate cover image: ${err.message}`);
-    console.warn('Continuing without cover image.');
+  let coverImageUrl = '';
+  const pexelsKey = process.env.PEXELS_API_KEY;
+  if (pexelsKey) {
+    console.log('Searching for cover image...');
+    try {
+      coverImageUrl = await searchCoverImage(pexelsKey, topic);
+      console.log(`Cover image found: ${coverImageUrl}`);
+    } catch (err) {
+      console.warn(`Warning: Could not find cover image: ${err.message}`);
+      console.warn('Continuing without cover image.');
+    }
   }
 
   const frontmatterLines = [
@@ -234,8 +220,8 @@ async function main() {
     `description: "${(result.description || '').replace(/"/g, '\\"')}"`,
     `date_generated: "${today}"`,
   ];
-  if (coverImageFile) {
-    frontmatterLines.push(`cover_image: "${coverImageFile}"`);
+  if (coverImageUrl) {
+    frontmatterLines.push(`cover_image: "${coverImageUrl}"`);
   }
   frontmatterLines.push('---');
   const frontmatter = frontmatterLines.join('\n');

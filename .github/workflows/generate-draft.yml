@@ -34,6 +34,7 @@ jobs:
       - name: Generate draft article
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: node scripts/generate-draft.mjs --topic "${{ github.event.inputs.topic }}" --tags "${{ github.event.inputs.tags }}"
 
       - name: Commit generated draft
