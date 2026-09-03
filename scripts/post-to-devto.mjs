@@ -31,8 +31,12 @@ async function postArticle(apiKey, filename) {
     published: false,
   };
 
-  if (frontmatter.cover_image && process.env.GITHUB_REPOSITORY) {
-    article.cover_image = `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/main/posts/images/${frontmatter.cover_image}`;
+  if (frontmatter.cover_image) {
+    article.cover_image = frontmatter.cover_image.startsWith('http')
+      ? frontmatter.cover_image
+      : process.env.GITHUB_REPOSITORY
+        ? `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/main/posts/images/${frontmatter.cover_image}`
+        : undefined;
   }
 
   const res = await fetch('https://dev.to/api/articles', {
