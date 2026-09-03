@@ -5,6 +5,12 @@ const DRAFTS_DIR = path.resolve('posts/drafts');
 const IMAGES_DIR = path.resolve('posts/images');
 
 const IMAGE_MODEL = 'gemini-3.1-flash-image';
+const TEXT_MODELS = [
+  process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  'gemini-2.5-flash',
+];
+
+const delay = ms => new Promise(r => setTimeout(r, ms));
 
 function parseArgs(argv) {
   const args = { topic: '', tags: '' };
@@ -74,7 +80,7 @@ function sanitizeJsonString(text) {
   return result;
 }
 
-async function callGemini(apiKey, topic, tags) {
+async function callGemini(apiKey, model, topic, tags) {
   const tagInstruction = tags
     ? `Focus on these technology areas: ${tags}.`
     : '';
@@ -93,7 +99,7 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
 - "body": full article body in markdown (do NOT include the title in the body)
 - "suggested_tags": array of 2-4 dev.to tags (lowercase, no spaces, alphanumeric and hyphens only)`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -108,7 +114,9 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with these f
 
   if (!res.ok) {
     const errBody = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${errBody}`);
+    const err = new Error(`Gemini API error ${res.status}: ${errBody}`);
+    err.status = res.status;
+    throw err;
   }
 
   const data = await res.json();
@@ -166,13 +174,29 @@ async function main() {
   console.log(`Generating article about: ${topic}`);
 
   let result;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let i = 0; i < TEXT_MODELS.length; i++) {
+    const model = TEXT_MODELS[i];
+    console.log(`Trying model: ${model}`);
     try {
-      result = await callGemini(apiKey, topic, tags);
+      result = await callGemini(apiKey, model, topic, tags);
       break;
     } catch (err) {
-      if (attempt === 2) throw err;
-      console.warn(`Attempt ${attempt} failed (${err.message}), retrying...`);
+      if (err.status === 503 && i < TEXT_MODELS.length - 1) {
+        console.warn(`Model ${model} unavailable (503), falling back to next model...`);
+        continue;
+      }
+      if (i < TEXT_MODELS.length - 1) {
+        console.warn(`Model ${model} failed (${err.message}), retrying with same model after 2s...`);
+        await delay(2000);
+        try {
+          result = await callGemini(apiKey, model, topic, tags);
+          break;
+        } catch (retryErr) {
+          console.warn(`Retry failed, falling back to next model...`);
+          continue;
+        }
+      }
+      throw err;
     }
   }
 
