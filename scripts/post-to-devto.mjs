@@ -32,11 +32,12 @@ async function postArticle(apiKey, filename) {
   };
 
   if (frontmatter.cover_image) {
-    article.cover_image = frontmatter.cover_image.startsWith('http')
+    article.main_image = frontmatter.cover_image.startsWith('http')
       ? frontmatter.cover_image
       : process.env.GITHUB_REPOSITORY
         ? `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY}/main/posts/images/${frontmatter.cover_image}`
         : undefined;
+    if (article.main_image) console.log(`  Cover image: ${article.main_image}`);
   }
 
   const res = await fetch('https://dev.to/api/articles', {

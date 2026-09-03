@@ -137,7 +137,7 @@ async function searchCoverImage(pexelsKey, topic) {
   }
 
   const data = await res.json();
-  const url = data.photos?.[0]?.src?.large2x;
+  const url = data.photos?.[0]?.src?.landscape;
   if (!url) {
     throw new Error('No matching images found on Pexels');
   }
